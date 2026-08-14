@@ -45,9 +45,27 @@ Transferir archivos de una PC a un iPhone de la forma más rápida y simple posi
 
 ## Estructura actual del proyecto
 
-- `app/` → solo `app/page.tsx` (portada) y `app/layout.tsx` (estructura raíz), template por defecto de `create-next-app`.
+- `app/` → páginas y API routes de la Fase 1 (ver "Arquitectura de la Fase 1").
 - `public/` → assets estáticos.
-- Sin base de datos, sin API routes, sin estado global aún.
+- `lib/` → store en memoria del servidor (`lib/store.ts`).
+- `.agents/skills/` → skills de desarrollo instaladas (ver "Skills instaladas").
+- Sin base de datos ni estado global.
+
+## Skills instaladas (14 ago 2026)
+
+Cargadas automáticamente desde `.agents/skills/<nombre>/SKILL.md` por opencode. El origen y hash de cada skill está registrado en `skills-lock.json`.
+
+| Skill | Origen |
+| --- | --- |
+| accessibility, seo | `addyosmani/web-quality-skills` |
+| composition-patterns, react-best-practices | `vercel-labs/agent-skills` |
+| frontend-design | `anthropics/skills` |
+| next-best-practices, next-cache-components, next-upgrade | `vercel-labs/next-skills` |
+| nodejs-backend-patterns, typescript-advanced-types | `wshobson/agents` |
+| nodejs-best-practices | `sickn33/antigravity-awesome-skills` |
+| tailwind-css-patterns | `giuseppe-trisciuoglio/developer-kit` |
+
+Más relevantes para Qroom: `react-best-practices`, `next-best-practices`, `tailwind-css-patterns`, `typescript-advanced-types`, `nodejs-backend-patterns`, `frontend-design`, `composition-patterns`, `accessibility`, `seo`.
 
 ## Decisiones tomadas (14 ago 2026)
 
