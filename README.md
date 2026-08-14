@@ -65,3 +65,8 @@ Full project context, decisions and roadmap live in [`opencode/PROYECTO.md`](ope
 ## Deployment
 
 Currently hosted on **Render** as an always-on Node.js service (start with `pnpm start`). Because of the in-memory store and SSE, it should run on a **single instance** — avoid multi-instance serverless platforms (e.g. Vercel) where possible.
+
+### Branches
+
+- `master` — working branch: all the changes and experiments done locally.
+- `release` — what is actually deployed to the live site (Render builds from this branch).
