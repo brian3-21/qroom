@@ -1,53 +1,53 @@
 # Qroom
 
-Aplicación web para transferir archivos del PC al iPhone (y entre dispositivos) usando **salas temporales**. Crea una sala, comparte el código o escanea el QR, y todos los conectados pueden subir y descargar archivos sin cuentas ni registros.
+Web app to transfer files from your PC to your iPhone (and between devices) using **temporary rooms**. Create a room, share the code or scan the QR, and everyone connected can upload and download files — no accounts, no sign-ups.
 
-## Características (Fase 1 — MVP)
+## Features (Phase 1 — MVP)
 
-- Crear sala y unirse con **código corto** o **QR** (generado con `react-qr-code`).
-- Entrada sin login: solo un **nombre** para identificarse.
-- Lista de **personas conectadas en tiempo real** mediante **Server-Sent Events (SSE)**.
-- Salas **multi-usuario**.
-- Subida de archivos: máximo **5 MB por archivo**, **100 MB por sala**.
-- Las salas se limpian automáticamente tras **24 horas** desde su creación.
-- Interfaz en español, responsive y optimizada para móvil (iPhone).
+- Create a room and join via a **6-character code** or **QR** (generated with `react-qr-code`).
+- No login: just enter a **name** to be identified.
+- Real-time list of **connected people** via **Server-Sent Events (SSE)**.
+- **Multi-user** rooms.
+- File uploads: max **5 MB per file**, **100 MB per room**.
+- Rooms are cleaned up automatically **24 hours** after creation.
+- Spanish UI, responsive and mobile-friendly (iPhone).
 
-## Stack
+## Tech Stack
 
 - [Next.js 16](https://nextjs.org) (App Router + Turbopack)
 - React 19 · TypeScript · Tailwind CSS v4
-- [pnpm](https://pnpm.io) como gestor de paquetes
+- [pnpm](https://pnpm.io) as the package manager
 
-## Empezar
+## Getting Started
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-Abre [http://localhost:3000](http://localhost:3000) y crea una sala.
+Open [http://localhost:3000](http://localhost:3000) and create a room.
 
 ## Scripts
 
 ```bash
-pnpm dev      # servidor de desarrollo
-pnpm build    # build de producción
-pnpm start    # sirve el build de producción
+pnpm dev      # development server
+pnpm build    # production build
+pnpm start    # serve the production build
 pnpm lint     # ESLint
 ```
 
-## Arquitectura
+## Architecture
 
-- **`lib/store.ts`** — store de salas en memoria del servidor (metadatos + buffers de archivos), validación de límites (5 MB/archivo, 100 MB/sala) y expiración de 24 h.
-- **`app/api/rooms/`** — API de salas: crear, unirse, salir, snapshot, stream SSE, subir/descargar/borrar archivos.
-- **`app/`** — portada (crear/unirse) y `app/sala/[code]` con QR, participantes en vivo y transferencia de archivos.
+- **`lib/store.ts`** — in-memory room store (metadata + file buffers), limits validation (5 MB/file, 100 MB/room) and 24 h expiry.
+- **`app/api/rooms/`** — rooms API: create, join, leave, snapshot, SSE stream, upload/download/delete files.
+- **`app/`** — home page (create/join) and `app/sala/[code]` with QR, live participants and file transfer.
 
-El store es **volátil**: al reiniciar el servidor se pierden las salas y los archivos. Necesita una **única instancia** del servidor (SSE + memoria).
+The store is **volatile**: rooms and files are lost when the server restarts. It requires a **single server instance** (SSE + memory).
 
-## Documentación del proyecto
+## Project documentation
 
-El contexto completo y las decisiones del proyecto están en [`opencode/PROYECTO.md`](opencode/PROYECTO.md).
+Full project context and decisions live in [`opencode/PROYECTO.md`](opencode/PROYECTO.md).
 
-## Despliegue
+## Deployment
 
-Build de Node.js siempre activo: `pnpm install && pnpm build` y `pnpm start`. No recomendado en plataformas serverless multi-instancia (Vercel) por el store en memoria y el SSE.
+Always-on Node.js service: `pnpm install && pnpm build`, start with `pnpm start`. Not recommended on multi-instance serverless platforms (e.g. Vercel) due to the in-memory store and SSE.
