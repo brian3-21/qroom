@@ -84,3 +84,13 @@ Transferir archivos de una PC a un iPhone de la forma más rápida y simple posi
 - Persistencia: SQLite (Drizzle o Prisma) o guardado en disco con API routes en `app/api/`.
 - Gestión de archivos más avanzada (progreso de subida, cancelar, borrar con confirmación).
 - Métricas y errores más amigables.
+
+## Decisión: hosting en internet (14 ago 2026)
+
+- **Se abandona probar el MVP en red local.** Motivos: el iPhone no accedía a la PC por WiFi (bloqueo por firewall de Windows / red tipo hotspot, no resuelto al quitar SimpleWall). Al final el objetivo real es usar Qroom desde varios dispositivos, así que el camino es **hostear la app en internet** y probar el MVP ahí.
+- El MVP actual funciona completo de forma local (crear/unirse, SSE, subir/descargar, límites) y está verificado con tests manuales.
+- Nota técnica para deployment: el store es **en memoria del servidor** (se pierde al reiniciar). Consecuencias:
+  - Necesita **una sola instancia** del servidor (SSE + memoria no funcionan bien detrás de varios workers/instancias). En plataformas como Vercel hay que limitar a 1 función (o usar un VPS/servidor Node siempre activo: Railway, Render, Fly.io, DigitalOcean).
+  - La **subida con `pnpm dev` local quedó pendiente de port-forwarding** — no es necesario: al hostear, el QR codificará la URL pública y funcionará desde cualquier teléfono.
+  - Después del deploy hay que re-probar en el iPhone: crear sala desde el PC, escanear QR, ver participantes en vivo y transferir un archivo real.
+- Para hosteos con memoria: **Vercel no es la opción idónea** (estático + funciones efímeras); un **VPS/servidor Node (Railway/Render/Fly/DigitalOcean)** es lo más alineado con el MVP. Decidir plataforma en la próxima sesión.
