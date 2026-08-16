@@ -237,10 +237,27 @@ export default function SalaClient({ code }: { code: string }) {
     }
   }
 
-  const copy = async (kind: "" | "text" | "code" | "link", text: string) => {
+  const recordCopiedText = useCallback(
+    (text: string) => {
+      // Best-effort: guarda en el historial la copia real, sin bloquear la UX.
+      fetch(`/api/rooms/${cleanCode}/copy`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, by: myName }),
+      }).catch(() => {});
+    },
+    [cleanCode, myName]
+  );
+
+  const copy = async (
+    kind: "" | "text" | "code" | "link",
+    text: string,
+    record = false
+  ) => {
     if (!text) return;
     try {
       await copyText(text);
+      if (kind === "text" && record) recordCopiedText(text);
       setCopied(kind);
       setTimeout(() => setCopied(""), 1500);
     } catch {
@@ -346,6 +363,18 @@ export default function SalaClient({ code }: { code: string }) {
   const roomUrl =
     typeof window !== "undefined" ? window.location.href : `/${cleanCode}`;
   const pid = getPid(cleanCode);
+  // Entrada "en vivo": el texto compartido actual pisa el historial mientras
+  // no se haya copiado (una vez copiado, la copia es la 1ª entrada y esta se oculta).
+  const liveEntry =
+    room && room.text && room.text !== room.history[room.history.length - 1]?.text
+      ? {
+          id: "live",
+          text: room.text,
+          by: room.textBy || "Alguien",
+          at: room.updatedAt,
+          live: true as const,
+        }
+      : null;
   const inputClass =
     "w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-zinc-100 placeholder-zinc-500 outline-none transition focus:border-cyan-400";
 
@@ -444,17 +473,48 @@ export default function SalaClient({ code }: { code: string }) {
 
             <details className="group rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/60">
               <summary className="flex cursor-pointer select-none items-center justify-between px-4 py-3 text-sm font-medium text-zinc-600 transition hover:text-cyan-500 dark:text-zinc-300">
-                Historial ({(room.history ?? []).length})
+                Historial ({(room.history ?? []).length + (liveEntry ? 1 : 0)})
                 <span className="text-xs text-zinc-400 transition group-open:rotate-180">▾</span>
               </summary>
               <div className="flex flex-col gap-2 px-4 pb-4">
-                {room.history.length === 0 && (
+                {!liveEntry && room.history.length === 0 && (
                   <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                    Aún no hay nada en el historial. Cada texto compartido quedará
-                    guardado aquí con su autor.
+                    Aún no hay nada en el historial. El texto que escribas aquí
+                    que quieras conservar, cópialo desde cualquier dispositivo.
                   </p>
                 )}
                 <ul className="flex flex-col gap-2">
+                  {liveEntry && (
+                    <li
+                      key={liveEntry.id}
+                      className="flex flex-col gap-2 rounded-xl border border-dashed border-cyan-500/40 bg-cyan-500/5 px-4 py-3"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cyan-500/20 text-[10px] font-bold text-cyan-500">
+                          {liveEntry.by.slice(0, 2).toUpperCase()}
+                        </span>
+                        <span className="truncate text-xs font-semibold text-zinc-700 dark:text-zinc-200">
+                          {liveEntry.by}
+                        </span>
+                        <span className="flex items-center gap-1.5 rounded-full bg-cyan-500/15 px-2 py-0.5 text-[10px] font-semibold text-cyan-600 dark:text-cyan-400">
+                          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-500" />
+                          escribiendo…
+                        </span>
+                        <span className="ml-auto shrink-0 text-xs text-zinc-400 dark:text-zinc-500">
+                          {formatRelative(liveEntry.at)}
+                        </span>
+                      </div>
+                      <p className="line-clamp-3 whitespace-pre-wrap break-words text-sm leading-5 text-zinc-700 dark:text-zinc-200">
+                        {liveEntry.text}
+                      </p>
+                      <button
+                        onClick={() => copy("text", liveEntry.text, true)}
+                        className="self-end text-xs font-medium text-zinc-500 transition hover:text-cyan-500 dark:text-zinc-400"
+                      >
+                        Copiar
+                      </button>
+                    </li>
+                  )}
                   {room.history
                     .slice()
                     .reverse()
@@ -670,7 +730,7 @@ export default function SalaClient({ code }: { code: string }) {
                   </span>
                 </div>
                 <button
-                  onClick={() => copy("text", draft)}
+                  onClick={() => copy("text", draft, true)}
                   disabled={draft === ""}
                   className="shrink-0 rounded-2xl bg-cyan-500 px-8 py-4 text-lg font-bold text-zinc-950 transition hover:bg-cyan-400 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
                 >

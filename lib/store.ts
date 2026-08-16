@@ -154,13 +154,32 @@ class QroomStore {
       throw new StoreError("El texto no puede superar los 64 KB");
     }
     if (text === room.text) return true;
-    room.history.push({ id: crypto.randomUUID(), text, by, at: Date.now() });
-    if (room.history.length > MAX_HISTORY_ITEMS) {
-      room.history = room.history.slice(-MAX_HISTORY_ITEMS);
-    }
     room.text = text;
     room.textBy = by;
     room.updatedAt = Date.now();
+    this.notify(code);
+    return true;
+  }
+
+  /**
+   * Records a history entry when a participant copies text (only the
+   * current/last-copied text should end up in history, not every keystroke).
+   */
+  recordCopy(code: string, text: string, by: string): boolean {
+    const room = this.getRoom(code);
+    if (!room) return false;
+    const cleanText = typeof text === "string" ? text : "";
+    if (cleanText.trim() === "") return true;
+    const byteLength = new TextEncoder().encode(cleanText).length;
+    if (byteLength > MAX_TEXT_BYTES) {
+      throw new StoreError("El texto no puede superar los 64 KB");
+    }
+    const last = room.history[room.history.length - 1];
+    if (last && last.text === cleanText) return true;
+    room.history.push({ id: crypto.randomUUID(), text: cleanText, by, at: Date.now() });
+    if (room.history.length > MAX_HISTORY_ITEMS) {
+      room.history = room.history.slice(-MAX_HISTORY_ITEMS);
+    }
     this.notify(code);
     return true;
   }

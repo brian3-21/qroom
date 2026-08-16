@@ -97,7 +97,7 @@ Most relevant to Qroom: `react-best-practices`, `next-best-practices`, `tailwind
 ## Architecture
 
 - **In-memory server store** (`lib/store.ts`): `globalThis` to survive HMR in dev.
-  - `Room = { code, createdAt, participants[], text, textBy, updatedAt, files[] }`.
+  - `Room = { code, createdAt, participants[], text, textBy, updatedAt, history[], files[] }`.
   - Limits: text value 64 KB per room; files 5 MB/file and 100 MB/room.
   - Expiration: 24 h from `createdAt`.
 - **API routes** (`app/api/`):
@@ -105,6 +105,7 @@ Most relevant to Qroom: `react-best-practices`, `next-best-practices`, `tailwind
   - `POST /api/rooms/join` → join with code + name, returns participant.
   - `GET /api/rooms/[code]/stream` → SSE with participants + **shared text** in real time.
   - `POST /api/rooms/[code]/text` → set the shared text (JSON `{ text, by }`), syncs to all devices.
+  - `POST /api/rooms/[code]/copy` → record a history entry (JSON `{ text, by }`), fired from a client's copy action.
   - `POST /api/rooms/[code]/files` → attach a file to the room (multipart, validates limits).
   - `GET /api/rooms/[code]/files/[fileId]` → download · `DELETE` → delete.
   - `DELETE /api/rooms/[code]/participant/[pid]` → leave the room.
@@ -122,7 +123,7 @@ The files MVP was implemented (in-memory store, SSE, QR, 5 MB/100 MB limits, 24 
 - Copy with one tap (Clipboard API) with visual feedback; the box auto-selects its content on tap.
 - Sync strategy: debounced (500 ms) + optimistic on paste/blur; remote text is not applied while the user is typing (applied on blur to avoid clobbering).
 - **API route added**: `POST /api/rooms/[code]/text` (`{ text, by }`), model now includes `Room.text / textBy / updatedAt` (64 KB limit, `MAX_TEXT_BYTES`).
-- **History (added Aug 16, 2026)**: every time the shared text changes, an entry `{ id, text, by, at }` is appended to `Room.history` (last 30, `MAX_HISTORY_ITEMS`). Shown in a collapsed `<details>` panel under the text box, newest first, with author avatar, relative time and a per-entry copy button. The current text stays the protagonist.
+- **History (added Aug 16, 2026)**: an entry `{ id, text, by, at }` is appended to `Room.history` (last 30, `MAX_HISTORY_ITEMS`) **only when a participant copies the shared text** (via `POST /api/rooms/[code]/copy`, fired from the main copy button — typing/pasting alone does NOT create entries; consecutive duplicates of the last entry are skipped). The entry's `by` is the person who copied. The **current shared text is pinned at the top of the panel as a live entry** (derived client-side from `room.text/textBy/updatedAt`, not stored, shown with a "escribiendo…" badge) so the last text typed is always reachable from any device; it disappears once a copy turns it into the newest permanent entry (avoiding duplicates). Shown in a collapsed `<details>` panel under the text box, newest first, with author avatar, relative time and a per-entry copy button. The current text stays the protagonist.
 - Files are **kept but demoted to a subtle collapsed `<details>` panel** (not the idea of the app). Text is the protagonist: one big textarea, a prominent "Copiar texto" button, compact participants/QR in collapsed panels.
 - Home and metadata now talk about text, not file transfer.
 
