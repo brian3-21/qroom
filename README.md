@@ -64,7 +64,7 @@ pnpm lint     # ESLint
 
 ## Project documentation
 
-Full project context, decisions and roadmap live in [`opencode/PROJECT.md`](opencode/PROJECT.md).
+Full project context, decisions and roadmap live in [`context/PROJECT.md`](context/PROJECT.md).
 
 ## Deployment
 

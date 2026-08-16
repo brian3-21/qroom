@@ -67,7 +67,7 @@ Text weighs almost nothing → **it works well even on slow connections**. That'
 
 ## Installed skills (Aug 14, 2026)
 
-Automatically loaded from `.agents/skills/<name>/SKILL.md` by opencode. The origin and hash of each skill is recorded in `skills-lock.json`.
+Automatically loaded from `.agents/skills/<name>/SKILL.md` by AI agents. The origin and hash of each skill is recorded in `skills-lock.json`.
 
 | Skill | Origin |
 | --- | --- |
