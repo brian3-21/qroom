@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Qroom — Transferencia instantánea de archivos",
+  title: "Qroom — Portapapeles compartido al instante",
   description:
-    "Transfiere archivos de tu PC a tu iPhone al instante. Crea una sala, comparte el código o el QR y comparte archivos sin cuentas.",
+    "Comparte texto entre tus dispositivos al instante. Crea una sala, comparte el código o el QR y pega un texto en un dispositivo para copiarlo en otro. Sin cuentas.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -63,8 +63,8 @@ export default function HomeClient() {
       <section className="flex flex-col gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6 sm:p-8">
         <h2 className="text-lg font-semibold text-zinc-100">Crear una sala</h2>
         <p className="text-sm text-zinc-400">
-          Crea una sala, comparte el código o el QR y recibe los archivos al
-          instante.
+          Crea una sala, comparte el código o el QR y pega un texto para tenerlo
+          al instante en cualquier otro dispositivo.
         </p>
         <form onSubmit={create} className="flex flex-col gap-3">
           <input

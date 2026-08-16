@@ -1,9 +1,11 @@
 const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const CODE_LENGTH = 6;
 
+export const MAX_TEXT_BYTES = 64 * 1024;
 export const MAX_FILE_BYTES = 5 * 1024 * 1024;
 export const MAX_ROOM_BYTES = 100 * 1024 * 1024;
 export const ROOM_TTL_MS = 24 * 60 * 60 * 1000;
+export const MAX_HISTORY_ITEMS = 30;
 
 export interface Participant {
   id: string;
@@ -35,11 +37,22 @@ export interface Limits {
   maxRoomBytes: number;
 }
 
+export interface HistoryEntry {
+  id: string;
+  text: string;
+  by: string;
+  at: number;
+}
+
 export interface RoomSnapshot {
   code: string;
   createdAt: number;
   expiresAt: number;
   participants: Participant[];
+  text: string;
+  textBy: string;
+  updatedAt: number;
+  history: HistoryEntry[];
   files: FileInfo[];
   totalBytes: number;
   limits: Limits;
@@ -49,6 +62,10 @@ interface Room {
   code: string;
   createdAt: number;
   participants: Map<string, Participant>;
+  text: string;
+  textBy: string;
+  updatedAt: number;
+  history: HistoryEntry[];
   files: Map<string, RoomFile>;
   totalBytes: number;
 }
@@ -85,6 +102,10 @@ class QroomStore {
       code,
       createdAt: Date.now(),
       participants: new Map([[clientId, participant]]),
+      text: "",
+      textBy: "",
+      updatedAt: Date.now(),
+      history: [],
       files: new Map(),
       totalBytes: 0,
     };
@@ -123,6 +144,25 @@ class QroomStore {
     const removed = room.participants.delete(clientId);
     if (removed) this.notify(code);
     return removed;
+  }
+
+  setText(code: string, text: string, by: string): boolean {
+    const room = this.getRoom(code);
+    if (!room) return false;
+    const byteLength = new TextEncoder().encode(text).length;
+    if (byteLength > MAX_TEXT_BYTES) {
+      throw new StoreError("El texto no puede superar los 64 KB");
+    }
+    if (text === room.text) return true;
+    room.history.push({ id: crypto.randomUUID(), text, by, at: Date.now() });
+    if (room.history.length > MAX_HISTORY_ITEMS) {
+      room.history = room.history.slice(-MAX_HISTORY_ITEMS);
+    }
+    room.text = text;
+    room.textBy = by;
+    room.updatedAt = Date.now();
+    this.notify(code);
+    return true;
   }
 
   addFile(
@@ -193,6 +233,10 @@ class QroomStore {
       createdAt: room.createdAt,
       expiresAt: room.createdAt + ROOM_TTL_MS,
       participants: [...room.participants.values()].sort((a, b) => a.joinedAt - b.joinedAt),
+      text: room.text,
+      textBy: room.textBy,
+      updatedAt: room.updatedAt,
+      history: room.history ?? [],
       files: [...room.files.values()]
         .map((f) => this.toFileInfo(f))
         .sort((a, b) => b.uploadedAt - a.uploadedAt),

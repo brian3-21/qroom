@@ -117,10 +117,14 @@ Most relevant to Qroom: `react-best-practices`, `next-best-practices`, `tailwind
 **Phase 1 (v1) — File transfer (archived Aug 14, 2026):**
 The files MVP was implemented (in-memory store, SSE, QR, 5 MB/100 MB limits, 24 h expiration). It's **dropped as the central feature** due to the fast-internet requirement and because it wasn't fast for the user. The file code is reused as room attachments.
 
-**Phase 2 — Shared clipboard MVP (in progress):**
+**Phase 2 — Shared clipboard MVP (implemented, Aug 16, 2026):**
 - **One shared text box**: paste/type on any device → live sync (SSE) to all → copy on the other device.
-- Copy with one tap + auto-select. Files as optional room attachments (reusing v1).
-- Minimalist UI, debounced sync. No feeds, no post lists.
+- Copy with one tap (Clipboard API) with visual feedback; the box auto-selects its content on tap.
+- Sync strategy: debounced (500 ms) + optimistic on paste/blur; remote text is not applied while the user is typing (applied on blur to avoid clobbering).
+- **API route added**: `POST /api/rooms/[code]/text` (`{ text, by }`), model now includes `Room.text / textBy / updatedAt` (64 KB limit, `MAX_TEXT_BYTES`).
+- **History (added Aug 16, 2026)**: every time the shared text changes, an entry `{ id, text, by, at }` is appended to `Room.history` (last 30, `MAX_HISTORY_ITEMS`). Shown in a collapsed `<details>` panel under the text box, newest first, with author avatar, relative time and a per-entry copy button. The current text stays the protagonist.
+- Files are **kept but demoted to a subtle collapsed `<details>` panel** (not the idea of the app). Text is the protagonist: one big textarea, a prominent "Copiar texto" button, compact participants/QR in collapsed panels.
+- Home and metadata now talk about text, not file transfer.
 
 **Phase 3 — Robustness:**
 - Persistence: SQLite (Drizzle or Prisma) or disk storage.
