@@ -21,6 +21,18 @@ Text weighs almost nothing → **it works well even on slow connections**. That'
 - Home: only "create room" and "join room" (name + code).
 - Room: **one big text box** (the shared clipboard), a **copy** action with visual feedback, and compact participants info. Code always visible (tap to copy). The QR and extras live collapsed/hidden, not front and center. No feeds, no post lists, no notes — just one box that mirrors on every device.
 
+## Visual identity: TUI / terminal-brutalist (Aug 16, 2026)
+
+The UI is deliberately **not** a generic rounded/soft "AI" design. Rules to keep when touching styles:
+
+- **Fonts**: Geist Mono everywhere (`--font-geist-mono`). No display/serif fonts loaded. Paragraphs and headings are mono, sized hierarchically.
+- **Geometry**: hard edges only — no rounded corners, no blurs, no glows, no grain, no gradients. Panels/borders are `border-2 border-fg` (2px, foreground color). Inner rows use `border border-fg/20`.
+- **Buttons**: brutal offset shadow `shadow-[3px_3px_0_0_var(--q-fg)]` that "collapses" on press (`active:translate-x-[3px] active:translate-y-[3px] active:shadow-none`). Full-width tap targets on mobile.
+- **Text actions**: bracketed mono labels instead of buttons-with-icons (`[ copiar ]`, `[ salir ]`, `[ borrar ]`). Look for `gap-1.5`/`[ ... ]` pattern in `SalaClient`.
+- **Language of the UI**: lowercase mono labels in caps with wide tracking (`tracking-[0.2em]`), `>` prompt markers, `●` green blink for live/online status (`q-blink`), `▸`/`▾` chevrons that rotate on open, blinking block cursor on the hero.
+- **Palette** (`--q-*` tokens in `app/globals.css`): warm paper light + warm black dark, single amber accent. Dark mode is **class-based** (`@custom-variant dark`) driven by **next-themes** (toggle in both headers). Keep `color-scheme` per mode.
+- **Mobile**: safe-area insets (`pt-[max(0.75rem,env(safe-area-inset-top))]`, `pb-[max(0.6rem,env(safe-area-inset-bottom))]`), inputs at ≥16px (no iOS zoom), native `navigator.share` when available, fixed bottom bar with one big `[ copiar ]` button.
+
 ## Usage flow
 
 1. A user **creates a room** → gets a **short code** and a **QR**.
@@ -61,7 +73,10 @@ Text weighs almost nothing → **it works well even on slow connections**. That'
 
 - `app/` → pages and API routes (see "Architecture").
 - `public/` → static assets.
-- `lib/` → in-memory server store (`lib/store.ts`).
+- `lib/` → in-memory server store (`lib/store.ts`), client helpers (`lib/client.ts`, `lib/format.ts`), `lib/utils.ts` (`cn`).
+- `components/` → `HomeClient.tsx`, `SalaClient.tsx` (page logic, "use client"), `ThemeProvider.tsx`, `ThemeToggle.tsx` (next-themes).
+- `components/ui/` → shadcn/ui components (radix-based) installed but **not used by the pages**; remove or use later.
+- `context/PROJECT.md` → this document.
 - `.agents/skills/` → installed dev skills (see "Installed skills").
 - No database or global state.
 
@@ -93,6 +108,9 @@ Most relevant to Qroom: `react-best-practices`, `next-best-practices`, `tailwind
 8. **Text limit**: a **single 64 KB value** per room (covers any pasted text with huge headroom). Attachments keep 5 MB/file and 100 MB/room.
 9. **Minimalist UI**: nothing that doesn't help paste/view/copy. See "Design principle: minimalism".
 10. **Speed rules**: debounced live sync on type (small payload, e.g. send on paste/blur + a "send" action), optimistic UI, no confirmation screens, no analytics that slow the first paint.
+11. **Theme (added Aug 16, 2026)**: **next-themes** with `attribute="class"` + `@custom-variant dark` in Tailwind v4; toggle (`ThemeToggle.tsx`) in both headers; `suppressHydrationWarning` on `<html>`.
+12. **Design system (added Aug 16, 2026)**: TUI/terminal-brutalist, see "Visual identity". Custom `--q-*` tokens in `globals.css`, no shadcn/ui components used on pages.
+13. **Components (added Aug 16, 2026)**: page logic lives in `HomeClient` / `SalaClient` ("use client"). Note: **`SalaClient.tsx` is ~880 lines** — refactor target (see phases); move sections (historial, personas, archivos) into small presentational components when touching it.
 
 ## Architecture
 
@@ -127,9 +145,16 @@ The files MVP was implemented (in-memory store, SSE, QR, 5 MB/100 MB limits, 24 
 - Files are **kept but demoted to a subtle collapsed `<details>` panel** (not the idea of the app). Text is the protagonist: one big textarea, a prominent "Copiar texto" button, compact participants/QR in collapsed panels.
 - Home and metadata now talk about text, not file transfer.
 
-**Phase 3 — Robustness:**
+**Phase 3 — Visual identity + mobile (implemented, Aug 16, 2026):**
+- Full UI redesign to **TUI/terminal-brutalist**: mono-only typography, 2px hard borders in foreground color, offset-shadow buttons, bracketed text actions, `> / ● / ▸` markers, blinking cursor, `QROOM~$` prompts. Amber accent on warm paper (light) / warm black (dark). See "Visual identity".
+- **Dark mode toggle at runtime** via next-themes (class strategy) + theme toggle in both headers.
+- **Mobile-first**: tabs on home (less scroll), fixed bottom bar with safe-area insets, big tap targets, ≥16px inputs (no iOS zoom), native share (`navigator.share`), auto-select only on desktop pointer.
+- Fixed pre-existing build break: `lib/utils.ts` (`cn`) was missing; shadcn/ui deps added to `package.json` (components unused by pages so far).
+
+**Phase 4 — Robustness & code health (suggested):**
 - Persistence: SQLite (Drizzle or Prisma) or disk storage.
-- Friendlier progress/confirmations, metrics.
+- **Refactor `SalaClient.tsx` (~880 lines)**: extract presentational sections (join card, historial list, participants, compartir, archivos, bottom bar) into small components in `components/`; keep hook/state logic in the client shell. Same pass for `HomeClient.tsx` (smaller).
+- Single-instance deployment (see "Decision: hosting"), friendlier confirmations, metrics.
 
 ## Decision: hosting on the internet (Aug 14, 2026)
 
