@@ -13,10 +13,22 @@ import {
   setStoredName,
 } from "@/lib/client";
 import { formatBytes, formatRelative } from "@/lib/format";
+import ThemeToggle from "@/components/ThemeToggle";
 
 type Status = "loading" | "notfound" | "ok";
 
 const SYNC_DEBOUNCE_MS = 500;
+
+const labelClass =
+  "font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-faint";
+const inputClass =
+  "w-full border-2 border-fg bg-background px-3 py-3 font-mono text-sm text-fg placeholder-faint outline-none transition focus:border-accent focus:bg-accent-soft/40";
+const btnPrimaryClass =
+  "border-2 border-fg bg-accent px-5 py-3 font-mono text-xs font-bold uppercase tracking-[0.2em] text-on-accent shadow-[3px_3px_0_0_var(--q-fg)] transition hover:bg-accent-strong active:translate-x-[3px] active:translate-y-[3px] active:shadow-none disabled:pointer-events-none disabled:opacity-40 sm:text-sm";
+const btnMonoClass =
+  "font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-muted underline-offset-4 transition hover:text-accent hover:underline";
+const summaryClass =
+  "group flex cursor-pointer select-none items-center gap-2.5 px-4 py-3.5 list-none [&::-webkit-details-marker]:hidden";
 
 export default function SalaClient({ code }: { code: string }) {
   const router = useRouter();
@@ -335,26 +347,35 @@ export default function SalaClient({ code }: { code: string }) {
 
   if (status === "loading") {
     return (
-      <main className="flex flex-1 items-center justify-center bg-zinc-50 dark:bg-black">
-        <p className="animate-pulse text-zinc-500 dark:text-zinc-400">Cargando sala...</p>
+      <main className="flex flex-1 flex-col items-center justify-center gap-3 bg-background">
+        <p className="font-mono text-sm uppercase tracking-[0.2em] text-muted">
+          <span aria-hidden className="text-accent">
+            &gt;
+          </span>{" "}
+          cargando sala
+          <span className="q-blink">_</span>
+        </p>
       </main>
     );
   }
 
   if (status === "notfound") {
     return (
-      <main className="flex flex-1 flex-col items-center justify-center gap-4 bg-zinc-50 px-6 dark:bg-black">
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-          Sala no encontrada o expirada
-        </h1>
-        <p className="text-zinc-500 dark:text-zinc-400">
-          Las salas duran 24 horas desde su creación.
-        </p>
+      <main className="flex flex-1 flex-col items-center justify-center gap-6 bg-background px-6">
+        <p className="font-mono text-6xl font-bold tracking-tight">404</p>
+        <div className="text-center">
+          <h1 className="font-mono text-lg font-bold uppercase tracking-[0.15em]">
+            sala no encontrada o expirada
+          </h1>
+          <p className="mt-2 font-mono text-xs uppercase tracking-[0.15em] text-muted">
+            las salas duran 24 h desde su creación
+          </p>
+        </div>
         <button
           onClick={() => router.push("/")}
-          className="rounded-xl bg-cyan-500 px-6 py-3 font-semibold text-zinc-950 transition hover:bg-cyan-400"
+          className={btnPrimaryClass}
         >
-          Crear o unirse a otra sala
+          [ crear o unirse a otra sala ]
         </button>
       </main>
     );
@@ -375,88 +396,143 @@ export default function SalaClient({ code }: { code: string }) {
           live: true as const,
         }
       : null;
-  const inputClass =
-    "w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-zinc-100 placeholder-zinc-500 outline-none transition focus:border-cyan-400";
+
+  const canShare =
+    typeof navigator !== "undefined" && typeof navigator.share === "function";
+
+  const shareRoom = async () => {
+    try {
+      await navigator.share({
+        title: `Sala ${cleanCode} · Qroom`,
+        text: `Únete a mi sala ${cleanCode} en Qroom`,
+        url: roomUrl,
+      });
+    } catch {
+      // El usuario canceló el compartir nativo, no es un error.
+    }
+  };
 
   return (
-    <main className="flex flex-1 flex-col bg-zinc-50 dark:bg-black">
-      <header className="sticky top-0 z-10 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/80">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+    <main className="q-fade flex flex-1 flex-col bg-background">
+      <header className="sticky top-0 z-40 border-b-2 border-fg bg-background/90 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-5xl items-center gap-3 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6">
           <button
             onClick={() => router.push("/")}
-            className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100"
+            title="Volver al inicio"
+            className="shrink-0 font-mono text-base font-bold tracking-tight"
           >
-            Qroom
+            QROOM<span className="text-accent">~$</span>
           </button>
-          <div className="flex items-center gap-2">
+
+          <div className="ml-1 flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2">
+            <span className="border-2 border-fg bg-card px-2.5 py-1.5 font-mono text-xs font-bold tracking-[0.25em] sm:text-sm">
+              {cleanCode}
+            </span>
             <button
               onClick={() => copy("code", cleanCode)}
-              className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 font-mono text-sm font-semibold tracking-[0.2em] text-zinc-900 transition hover:border-cyan-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+              className={`${btnMonoClass} shrink-0 ${
+                copied === "code" ? "text-ok" : ""
+              }`}
             >
-              {cleanCode}
+              {copied === "code" ? "copiado ✓" : "[ copiar ]"}
             </button>
-            {copied === "code" && (
-              <span className="text-xs font-medium text-cyan-500">¡Copiado!</span>
+          </div>
+
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2.5">
+            <ThemeToggle />
+            {joined && (
+              <button
+                onClick={leave}
+                className={`${btnMonoClass} shrink-0 hover:text-danger`}
+              >
+                [ salir ]
+              </button>
             )}
           </div>
-          {joined && (
-            <button
-              onClick={leave}
-              className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-600 transition hover:border-red-400 hover:text-red-500 dark:border-zinc-700 dark:text-zinc-300"
-            >
-              Salir
-            </button>
-          )}
         </div>
       </header>
 
-      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 px-4 py-6 pb-32 sm:px-6">
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 px-4 pt-5 pb-48 sm:px-6 sm:pb-52">
         {!joined && room && (
-          <section className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900/60 sm:p-8">
-            <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
-              <div className="flex flex-col items-center gap-3">
-                <div className="rounded-2xl bg-white p-3 ring-1 ring-zinc-200 dark:ring-zinc-700">
-                  <QRCode value={roomUrl} size={140} />
+          <section className="mx-auto w-full max-w-3xl border-2 border-fg bg-card p-5 sm:p-7">
+            <div className="grid gap-8 sm:grid-cols-[auto_1fr] sm:items-center">
+              <div className="flex flex-col items-center gap-2.5">
+                <div className="border-2 border-fg bg-white p-2.5">
+                  <QRCode
+                    value={roomUrl}
+                    size={168}
+                    bgColor="#ffffff"
+                    fgColor="#16150f"
+                  />
                 </div>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Escanea para unirte desde otro dispositivo
+                <p className="font-mono text-[9px] font-bold uppercase tracking-[0.3em] text-faint">
+                  ▸ escanea para unirte
                 </p>
               </div>
-              <form onSubmit={join} className="flex w-full flex-1 flex-col gap-3">
-                <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                  Unirte a la sala {cleanCode}
-                </h2>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                  Solo necesitas un nombre. Sin cuentas, sin esperas.
-                </p>
-                <input
-                  value={nameInput}
-                  onChange={(e) => setNameInput(e.target.value)}
-                  placeholder="Tu nombre"
-                  maxLength={40}
-                  required
-                  className={inputClass}
-                />
-                <button
-                  type="submit"
-                  className="rounded-xl bg-cyan-500 px-4 py-3 font-semibold text-zinc-950 transition hover:bg-cyan-400"
-                >
-                  Entrar a la sala
+
+              <form onSubmit={join} className="flex flex-col gap-4">
+                <div>
+                  <h2 className="font-mono text-base font-bold uppercase tracking-[0.15em]">
+                    <span aria-hidden className="text-accent">
+                      &gt;
+                    </span>{" "}
+                    unirse
+                  </h2>
+                  <p className="mt-1.5 font-mono text-xs uppercase tracking-[0.25em] text-faint">
+                    sala: {cleanCode} · sin cuentas, sin esperas
+                  </p>
+                </div>
+                <label className="flex flex-col gap-1.5">
+                  <span className={labelClass}>nombre</span>
+                  <input
+                    value={nameInput}
+                    onChange={(e) => setNameInput(e.target.value)}
+                    placeholder="ana"
+                    maxLength={40}
+                    required
+                    autoComplete="nickname"
+                    className={inputClass}
+                  />
+                </label>
+                <button type="submit" className={btnPrimaryClass}>
+                  [ entrar a la sala ]
                 </button>
+                <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-faint">
+                  expira: {expiresIn} · en línea: {room.participants.length}
+                </p>
               </form>
             </div>
           </section>
         )}
 
         {error && (
-          <p className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-            {error}
-          </p>
+          <div
+            role="alert"
+            className="border-2 border-danger bg-danger/10 px-3 py-2.5 font-mono text-xs leading-5 text-danger"
+          >
+            [!] {error}
+          </div>
         )}
 
         {room && joined && (
           <>
-            <section className="flex flex-1 flex-col">
+            <section className="flex flex-1 flex-col gap-2.5">
+              <div className="flex items-center gap-2 px-1 font-mono text-[10px] font-bold uppercase tracking-[0.15em] sm:text-xs">
+                {pending ? (
+                  <span className="text-accent">
+                    &gt; enviando…
+                  </span>
+                ) : draft === "" ? (
+                  <span className="text-faint">idle · pega un texto para compartir</span>
+                ) : copied === "text" ? (
+                  <span className="text-ok">● en tu portapapeles</span>
+                ) : (
+                  <span className="text-ok">● listo para copiar</span>
+                )}
+                <span className="ml-auto shrink-0 tracking-[0.1em] text-faint">
+                  car. {draft.length}
+                </span>
+              </div>
               <textarea
                 ref={textareaRef}
                 value={draft}
@@ -464,54 +540,65 @@ export default function SalaClient({ code }: { code: string }) {
                 onPaste={onTextPaste}
                 onFocus={onTextFocus}
                 onBlur={onTextBlur}
-                onClick={(e) => e.currentTarget.select()}
-                placeholder="Pega aquí un texto... se sincroniza al instante en todos los dispositivos."
-                className="min-h-[45vh] flex-1 resize-y rounded-2xl border border-zinc-200 bg-white p-5 text-lg leading-7 text-zinc-900 placeholder-zinc-400 shadow-sm outline-none transition focus:border-cyan-400 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-100 dark:placeholder-zinc-600"
+                onClick={(e) => {
+                  if (window.matchMedia("(pointer: fine)").matches) {
+                    e.currentTarget.select();
+                  }
+                }}
+                placeholder="pega aquí un texto… se sincroniza al instante en todos los dispositivos"
+                aria-label="Texto de la sala"
+                className="min-h-[42dvh] w-full flex-1 resize-y border-2 border-fg bg-card p-4 font-mono text-sm leading-7 placeholder-faint outline-none transition focus:border-accent focus:bg-accent-soft/20 selection:bg-accent/30 sm:p-5 sm:text-base"
                 spellCheck={false}
               />
             </section>
 
-            <details className="group rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/60">
-              <summary className="flex cursor-pointer select-none items-center justify-between px-4 py-3 text-sm font-medium text-zinc-600 transition hover:text-cyan-500 dark:text-zinc-300">
-                Historial ({(room.history ?? []).length + (liveEntry ? 1 : 0)})
-                <span className="text-xs text-zinc-400 transition group-open:rotate-180">▾</span>
+            <details className="group border-2 border-fg bg-card">
+              <summary className={summaryClass}>
+                <span
+                  aria-hidden
+                  className="inline-block text-[10px] text-accent transition-transform duration-200 group-open:rotate-90"
+                >
+                  ▸
+                </span>
+                <span className="font-mono text-xs font-bold uppercase tracking-[0.2em]">
+                  historial
+                </span>
+                <span className="ml-auto font-mono text-[10px] tracking-[0.2em] text-faint">
+                  [{(room.history ?? []).length + (liveEntry ? 1 : 0)}]
+                </span>
               </summary>
-              <div className="flex flex-col gap-2 px-4 pb-4">
+              <div className="flex flex-col gap-2 border-t-2 border-fg px-4 py-4">
                 {!liveEntry && room.history.length === 0 && (
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                    Aún no hay nada en el historial. El texto que escribas aquí
+                  <p className="font-mono text-xs leading-5 text-muted sm:text-sm">
+                    aún no hay nada en el historial. el texto que escribas aquí
                     que quieras conservar, cópialo desde cualquier dispositivo.
                   </p>
                 )}
                 <ul className="flex flex-col gap-2">
                   {liveEntry && (
-                    <li
-                      key={liveEntry.id}
-                      className="flex flex-col gap-2 rounded-xl border border-dashed border-cyan-500/40 bg-cyan-500/5 px-4 py-3"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cyan-500/20 text-[10px] font-bold text-cyan-500">
-                          {liveEntry.by.slice(0, 2).toUpperCase()}
+                    <li className="flex flex-col gap-2 border-2 border-dashed border-accent bg-accent-soft/40 px-3 py-3">
+                      <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider">
+                        <span className="font-bold text-accent">
+                          [{liveEntry.by.slice(0, 2).toUpperCase()}]
                         </span>
-                        <span className="truncate text-xs font-semibold text-zinc-700 dark:text-zinc-200">
+                        <span className="truncate font-semibold normal-case">
                           {liveEntry.by}
                         </span>
-                        <span className="flex items-center gap-1.5 rounded-full bg-cyan-500/15 px-2 py-0.5 text-[10px] font-semibold text-cyan-600 dark:text-cyan-400">
-                          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-500" />
-                          escribiendo…
+                        <span className="flex items-center gap-1.5 normal-case text-accent">
+                          <span className="q-blink">●</span>escribiendo…
                         </span>
-                        <span className="ml-auto shrink-0 text-xs text-zinc-400 dark:text-zinc-500">
+                        <span className="ml-auto shrink-0 normal-case text-faint">
                           {formatRelative(liveEntry.at)}
                         </span>
                       </div>
-                      <p className="line-clamp-3 whitespace-pre-wrap break-words text-sm leading-5 text-zinc-700 dark:text-zinc-200">
+                      <p className="line-clamp-3 whitespace-pre-wrap break-words font-mono text-xs leading-6 sm:text-sm">
                         {liveEntry.text}
                       </p>
                       <button
                         onClick={() => copy("text", liveEntry.text, true)}
-                        className="self-end text-xs font-medium text-zinc-500 transition hover:text-cyan-500 dark:text-zinc-400"
+                        className={`${btnMonoClass} self-end`}
                       >
-                        Copiar
+                        [ copiar ]
                       </button>
                     </li>
                   )}
@@ -521,27 +608,27 @@ export default function SalaClient({ code }: { code: string }) {
                     .map((h) => (
                       <li
                         key={h.id}
-                        className="flex flex-col gap-2 rounded-xl bg-zinc-100 px-4 py-3 dark:bg-zinc-800/60"
+                        className="flex flex-col gap-2 border border-fg/20 bg-background px-3 py-3"
                       >
-                        <div className="flex items-center gap-2">
-                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cyan-500/20 text-[10px] font-bold text-cyan-500">
-                            {h.by.slice(0, 2).toUpperCase()}
+                        <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider">
+                          <span className="font-bold text-accent">
+                            [{h.by.slice(0, 2).toUpperCase()}]
                           </span>
-                          <span className="truncate text-xs font-semibold text-zinc-700 dark:text-zinc-200">
+                          <span className="truncate font-semibold normal-case">
                             {h.by}
                           </span>
-                          <span className="ml-auto shrink-0 text-xs text-zinc-400 dark:text-zinc-500">
+                          <span className="ml-auto shrink-0 normal-case text-faint">
                             {formatRelative(h.at)}
                           </span>
                         </div>
-                        <p className="line-clamp-3 whitespace-pre-wrap break-words text-sm leading-5 text-zinc-700 dark:text-zinc-200">
+                        <p className="line-clamp-3 whitespace-pre-wrap break-words font-mono text-xs leading-6 sm:text-sm">
                           {h.text}
                         </p>
                         <button
                           onClick={() => copy("text", h.text)}
-                          className="self-end text-xs font-medium text-zinc-500 transition hover:text-cyan-500 dark:text-zinc-400"
+                          className={`${btnMonoClass} self-end`}
                         >
-                          Copiar
+                          [ copiar ]
                         </button>
                       </li>
                     ))}
@@ -549,77 +636,131 @@ export default function SalaClient({ code }: { code: string }) {
               </div>
             </details>
 
-            <div className="flex flex-col gap-2">
-              <details className="group rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/60">
-                <summary className="flex cursor-pointer select-none items-center justify-between px-4 py-3 text-sm font-medium text-zinc-600 transition hover:text-cyan-500 dark:text-zinc-300">
-                  Personas conectadas ({room.participants.length})
-                  <span className="text-xs text-zinc-400 transition group-open:rotate-180">▾</span>
+            <div className="flex flex-col gap-2.5">
+              <details className="group border-2 border-fg bg-card">
+                <summary className={summaryClass}>
+                  <span
+                    aria-hidden
+                    className="inline-block text-[10px] text-accent transition-transform duration-200 group-open:rotate-90"
+                  >
+                    ▸
+                  </span>
+                  <span className="font-mono text-xs font-bold uppercase tracking-[0.2em]">
+                    personas conectadas
+                  </span>
+                  <span className="ml-auto font-mono text-[10px] tracking-[0.2em] text-faint">
+                    [{room.participants.length}]
+                  </span>
                 </summary>
-                <div className="px-4 pb-4">
+                <div className="border-t-2 border-fg px-4 py-4">
                   {room.participants.length === 0 && (
-                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                      Nadie conectado aún.
+                    <p className="font-mono text-xs text-muted sm:text-sm">
+                      nadie conectado aún.
                     </p>
                   )}
-                  <ul className="flex flex-col gap-2">
+                  <ul className="flex flex-col gap-1.5">
                     {room.participants.map((p) => (
                       <li
                         key={p.id}
-                        className="flex items-center gap-3 rounded-xl bg-zinc-100 px-3 py-2 dark:bg-zinc-800/60"
+                        className="flex items-center gap-2 border border-fg/20 bg-background px-3 py-2.5 font-mono text-xs sm:text-sm"
                       >
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cyan-500/20 text-xs font-bold text-cyan-500">
-                          {p.name.slice(0, 2).toUpperCase()}
+                        <span className="font-bold text-accent">
+                          [{p.name.slice(0, 2).toUpperCase()}]
                         </span>
-                        <span className="truncate text-sm font-medium text-zinc-800 dark:text-zinc-100">
+                        <span className="truncate font-semibold">
                           {p.name}
                           {p.id === pid && (
-                            <span className="ml-1.5 text-xs text-cyan-500">(tú)</span>
+                            <span className="ml-1.5 text-accent">(tú)</span>
                           )}
                         </span>
-                        <span className="ml-auto h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
+                        <span className="ml-auto flex shrink-0 items-center gap-1.5">
+                          <span className="text-[8px] leading-none text-ok">
+                            <span className="q-blink">●</span>
+                          </span>
+                          <span className="text-[9px] uppercase tracking-[0.15em] text-faint">
+                            en línea
+                          </span>
+                        </span>
                       </li>
                     ))}
                   </ul>
                 </div>
               </details>
 
-              <details className="group rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/60">
-                <summary className="flex cursor-pointer select-none items-center justify-between px-4 py-3 text-sm font-medium text-zinc-600 transition hover:text-cyan-500 dark:text-zinc-300">
-                  Compartir sala
-                  <span className="text-xs text-zinc-400 transition group-open:rotate-180">▾</span>
-                </summary>
-                <div className="flex flex-col items-center gap-3 px-4 pb-4">
-                  <div className="rounded-2xl bg-white p-3 ring-1 ring-zinc-200 dark:ring-zinc-700">
-                    <QRCode value={roomUrl} size={130} />
-                  </div>
-                  <button
-                    onClick={() => copy("link", roomUrl)}
-                    className="w-full rounded-xl border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:border-cyan-400 dark:border-zinc-700 dark:text-zinc-200"
+              <details className="group border-2 border-fg bg-card">
+                <summary className={summaryClass}>
+                  <span
+                    aria-hidden
+                    className="inline-block text-[10px] text-accent transition-transform duration-200 group-open:rotate-90"
                   >
-                    {copied === "link" ? "¡Enlace copiado!" : "Copiar enlace de la sala"}
-                  </button>
+                    ▸
+                  </span>
+                  <span className="font-mono text-xs font-bold uppercase tracking-[0.2em]">
+                    compartir sala
+                  </span>
+                </summary>
+                <div className="flex flex-col items-center gap-4 border-t-2 border-fg px-4 py-4">
+                  <div className="border-2 border-fg bg-white p-2">
+                    <QRCode
+                      value={roomUrl}
+                      size={120}
+                      bgColor="#ffffff"
+                      fgColor="#16150f"
+                    />
+                  </div>
+                  <div className="flex w-full flex-col gap-2 sm:flex-row">
+                    <button
+                      onClick={() => copy("link", roomUrl)}
+                      className={`${btnMonoClass} h-11 flex-1 border-2 border-fg bg-background no-underline hover:border-accent`}
+                    >
+                      {copied === "link" ? "enlace copiado ✓" : "[ copiar enlace ]"}
+                    </button>
+                    {canShare && (
+                      <button
+                        onClick={shareRoom}
+                        className="h-11 flex-1 border-2 border-fg bg-accent font-mono text-xs font-bold uppercase tracking-[0.2em] text-on-accent shadow-[3px_3px_0_0_var(--q-fg)] transition hover:bg-accent-strong active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
+                      >
+                        [ compartir… ]
+                      </button>
+                    )}
+                  </div>
                 </div>
               </details>
 
-              <details className="group rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/60">
-                <summary className="flex cursor-pointer select-none items-center justify-between px-4 py-3 text-sm font-medium text-zinc-600 transition hover:text-cyan-500 dark:text-zinc-300">
-                  Archivos ({room.files.length})
-                  <span className="text-xs text-zinc-400 transition group-open:rotate-180">▾</span>
+              <details className="group border-2 border-fg bg-card">
+                <summary className={summaryClass}>
+                  <span
+                    aria-hidden
+                    className="inline-block text-[10px] text-accent transition-transform duration-200 group-open:rotate-90"
+                  >
+                    ▸
+                  </span>
+                  <span className="font-mono text-xs font-bold uppercase tracking-[0.2em]">
+                    archivos
+                  </span>
+                  <span className="ml-auto font-mono text-[10px] tracking-[0.2em] text-faint">
+                    [{room.files.length}]
+                  </span>
                 </summary>
-                <div className="flex flex-col gap-3 px-4 pb-4">
+                <div className="flex flex-col gap-3 border-t-2 border-fg px-4 py-4">
                   <div
                     onDrop={onDrop}
                     onDragOver={(e) => e.preventDefault()}
-                    className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-zinc-300 bg-white px-6 py-8 text-center transition hover:border-cyan-400 dark:border-zinc-700 dark:bg-zinc-900/60"
+                    className="flex flex-col items-center gap-3 border-2 border-dashed border-fg/40 px-4 py-8 text-center transition hover:border-accent"
                   >
-                    <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
-                      Arrastra archivos aquí
+                    <span aria-hidden className="font-mono text-2xl leading-none text-accent">
+                      +
+                    </span>
+                    <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] sm:text-sm">
+                      arrastra archivos aquí
                     </p>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                      o selecciónalos desde tu dispositivo
+                    <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-faint">
+                      o selecciónalos desde tu dispositivo · máx. 5 MB por archivo
                     </p>
-                    <label className="mt-1 cursor-pointer rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-cyan-400">
-                      Elegir archivos
+                    <label
+                      className={`${btnPrimaryClass} cursor-pointer px-4 py-2.5`}
+                    >
+                      [ elegir archivos ]
                       <input
                         type="file"
                         multiple
@@ -630,18 +771,18 @@ export default function SalaClient({ code }: { code: string }) {
                   </div>
 
                   {uploading && (
-                    <div className="rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900/60">
-                      <div className="mb-2 flex items-center justify-between text-sm">
-                        <span className="truncate font-medium text-zinc-800 dark:text-zinc-100">
-                          Subiendo {uploading.name}
+                    <div className="border border-fg/20 bg-background p-3">
+                      <div className="mb-2 flex items-center justify-between gap-3 font-mono text-[10px] uppercase tracking-[0.15em]">
+                        <span className="truncate text-accent">
+                          &gt; subiendo {uploading.name}
                         </span>
-                        <span className="ml-3 shrink-0 text-zinc-500 dark:text-zinc-400">
+                        <span className="shrink-0 text-faint">
                           {uploading.progress}%
                         </span>
                       </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+                      <div className="h-1.5 bg-fg/10">
                         <div
-                          className="h-full rounded-full bg-cyan-500 transition-all"
+                          className="h-full bg-accent transition-all"
                           style={{ width: `${uploading.progress}%` }}
                         />
                       </div>
@@ -649,98 +790,110 @@ export default function SalaClient({ code }: { code: string }) {
                   )}
 
                   {room.files.length === 0 && (
-                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                      Aún no hay archivos en la sala.
+                    <p className="font-mono text-xs text-muted sm:text-sm">
+                      aún no hay archivos en la sala.
                     </p>
                   )}
-                  <ul className="flex flex-col gap-2">
-                    {room.files.map((f) => (
-                      <li
-                        key={f.id}
-                        className="flex flex-col gap-2 rounded-xl bg-zinc-100 px-4 py-3 dark:bg-zinc-800/60"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="h-9 w-9 shrink-0 rounded-lg bg-cyan-500/20 text-center text-lg leading-9 text-cyan-500">
-                            📄
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-zinc-800 dark:text-zinc-100">
-                              {f.name}
-                            </p>
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                              {formatBytes(f.size)} · {f.uploadedBy}
-                            </p>
+                  <ul className="flex flex-col gap-1.5">
+                    {room.files.map((f) => {
+                      const ext = (
+                        f.name.includes(".")
+                          ? (f.name.split(".").pop() ?? "file")
+                          : "file"
+                      ).toUpperCase();
+                      return (
+                        <li
+                          key={f.id}
+                          className="flex flex-col gap-2 border border-fg/20 bg-background px-3 py-3"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="shrink-0 font-mono text-[10px] font-bold text-accent">
+                              [.{ext.slice(0, 4)}]
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate font-mono text-xs font-semibold sm:text-sm">
+                                {f.name}
+                              </p>
+                              <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-faint">
+                                {formatBytes(f.size)} · {f.uploadedBy}
+                              </p>
+                            </div>
+                            <a
+                              href={`/api/rooms/${cleanCode}/files/${f.id}`}
+                              className="shrink-0 border-2 border-fg bg-fg px-2.5 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-background transition hover:opacity-85"
+                            >
+                              descargar
+                            </a>
                           </div>
-                          <a
-                            href={`/api/rooms/${cleanCode}/files/${f.id}`}
-                            className="shrink-0 rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
-                          >
-                            Descargar
-                          </a>
-                        </div>
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() =>
-                              copy(
-                                "link",
-                                `${window.location.origin}/api/rooms/${cleanCode}/files/${f.id}`
-                              )
-                            }
-                            className="text-xs font-medium text-zinc-500 transition hover:text-cyan-500 dark:text-zinc-400"
-                          >
-                            Copiar enlace
-                          </button>
-                          <button
-                            onClick={() => deleteFile(f.id)}
-                            className="text-xs font-medium text-zinc-500 transition hover:text-red-500 dark:text-zinc-400"
-                          >
-                            Borrar
-                          </button>
-                        </div>
-                      </li>
-                    ))}
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() =>
+                                copy(
+                                  "link",
+                                  `${window.location.origin}/api/rooms/${cleanCode}/files/${f.id}`
+                                )
+                              }
+                              className={btnMonoClass}
+                            >
+                              [ copiar enlace ]
+                            </button>
+                            <button
+                              onClick={() => deleteFile(f.id)}
+                              className={`${btnMonoClass} ml-auto hover:text-danger`}
+                            >
+                              [ borrar ]
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               </details>
 
-              <p className="px-2 text-xs text-zinc-400 dark:text-zinc-600">
-                Texto: 64 KB · Límite por archivo: {formatBytes(room.limits.maxFileBytes)} ·{" "}
-                {formatBytes(room.limits.maxRoomBytes)} por sala · Expira en {expiresIn}
+              <p className="px-2 font-mono text-[9px] uppercase tracking-[0.15em] text-faint sm:text-[10px]">
+                texto 64 kb · archivo {formatBytes(room.limits.maxFileBytes)} ·
+                sala {formatBytes(room.limits.maxRoomBytes)} · expira en{" "}
+                {expiresIn}
               </p>
-            </div>
-
-            <div className="fixed inset-x-0 bottom-0 z-20 border-t border-zinc-200 bg-white/90 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
-              <div className="mx-auto flex w-full max-w-5xl items-center gap-4 px-4 py-3 sm:px-6">
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                    {draft === ""
-                      ? "Pega un texto arriba para compartirlo"
-                      : copied === "text"
-                        ? "Texto en tu portapapeles"
-                        : "Listo para copiar"}
-                  </span>
-                  <span className="truncate text-xs text-zinc-500 dark:text-zinc-400">
-                    {pending
-                      ? "Enviando..."
-                      : draft === ""
-                        ? "Se sincroniza solo"
-                        : room.textBy
-                          ? `Actualizado por ${room.textBy}`
-                          : "Sincronizado"}
-                  </span>
-                </div>
-                <button
-                  onClick={() => copy("text", draft, true)}
-                  disabled={draft === ""}
-                  className="shrink-0 rounded-2xl bg-cyan-500 px-8 py-4 text-lg font-bold text-zinc-950 transition hover:bg-cyan-400 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {copied === "text" ? "¡Copiado!" : "Copiar"}
-                </button>
-              </div>
             </div>
           </>
         )}
       </div>
+
+      {room && joined && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-fg bg-card/95 backdrop-blur">
+          <div className="mx-auto flex w-full max-w-5xl items-center gap-3 px-4 py-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] sm:px-6">
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-mono text-[10px] font-bold uppercase tracking-[0.15em] sm:text-[11px]">
+                {draft === ""
+                  ? "idle — pega un texto"
+                  : pending
+                    ? <span className="text-accent">{"→ enviando…"}</span>
+                    : copied === "text"
+                      ? <span className="text-ok">{"● en tu portapapeles"}</span>
+                      : <span className="text-ok">{"● listo para copiar"}</span>}
+              </p>
+              <p className="hidden truncate font-mono text-[9px] uppercase tracking-[0.15em] text-faint sm:block">
+                {draft === ""
+                  ? "se sincroniza solo"
+                  : pending
+                    ? "…"
+                    : room.textBy
+                      ? `actualizado por ${room.textBy}`
+                      : "sincronizado"}
+              </p>
+            </div>
+            <button
+              onClick={() => copy("text", draft, true)}
+              disabled={draft === ""}
+              className="shrink-0 border-2 border-fg bg-accent px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-[0.2em] text-on-accent shadow-[3px_3px_0_0_var(--q-fg)] transition hover:bg-accent-strong active:translate-x-[3px] active:translate-y-[3px] active:shadow-none disabled:pointer-events-none disabled:opacity-40 sm:px-10 sm:text-sm"
+            >
+              {copied === "text" ? "copiado ✓" : "[ copiar ]"}
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

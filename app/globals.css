@@ -1,26 +1,133 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --q-bg: #e8e5dd;
+  --q-fg: #16150f;
+  --q-card: #f6f3eb;
+  --q-card-soft: #ded9cb;
+  --q-line: #c6c0ae;
+  --q-line-strong: #16150f;
+  --q-muted: #5f594a;
+  --q-faint: #8e8671;
+  --q-accent: #dd6b00;
+  --q-accent-strong: #c25d00;
+  --q-accent-soft: rgba(221, 107, 0, 0.13);
+  --q-on-accent: #fff8ef;
+  --q-ok: #1d7f3c;
+  --q-danger: #b3261e;
+  --background: var(--q-bg);
+  --foreground: var(--q-fg);
+  color-scheme: light;
+}
+
+.dark {
+  --q-bg: #0c0b09;
+  --q-fg: #e9e5da;
+  --q-card: #14120f;
+  --q-card-soft: #201d17;
+  --q-line: #353129;
+  --q-line-strong: #e9e5da;
+  --q-muted: #a89f8d;
+  --q-faint: #6d6554;
+  --q-accent: #ffb020;
+  --q-accent-strong: #ffc555;
+  --q-accent-soft: rgba(255, 176, 32, 0.15);
+  --q-on-accent: #1c1400;
+  --q-ok: #4ade80;
+  --q-danger: #ff6a56;
+  --background: var(--q-bg);
+  --foreground: var(--q-fg);
+  color-scheme: dark;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-background: var(--q-bg);
+  --color-foreground: var(--q-fg);
+  --color-card: var(--q-card);
+  --color-card-soft: var(--q-card-soft);
+  --color-border: var(--q-line);
+  --color-border-strong: var(--q-line-strong);
+  --color-muted: var(--q-muted);
+  --color-faint: var(--q-faint);
+  --color-accent: var(--q-accent);
+  --color-accent-strong: var(--q-accent-strong);
+  --color-accent-soft: var(--q-accent-soft);
+  --color-on-accent: var(--q-on-accent);
+  --color-ok: var(--q-ok);
+  --color-danger: var(--q-danger);
+  --font-sans: var(--font-geist-mono);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+body {
+  background: var(--q-bg);
+  color: var(--q-fg);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--q-accent) 30%, transparent);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--q-accent);
+  outline-offset: 2px;
+}
+
+/* Entrada escalonada */
+@keyframes q-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.q-rise {
+  animation: q-rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes q-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.q-fade {
+  animation: q-fade 0.35s ease-out both;
+}
+
+/* Cursor de terminal parpadeante */
+@keyframes q-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.q-blink {
+  animation: q-blink 1.1s steps(1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
